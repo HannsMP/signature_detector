@@ -91,7 +91,10 @@ def build_base_network(input_shape):
     x = tf.keras.layers.Dense(128, activation='relu')(x)
     x = tf.keras.layers.Dense(64, activation='relu')(x)
     x = tf.keras.layers.Dense(32, activation='relu')(x)
-    return tf.keras.Model(inputs, x)
+
+    outputs = tf.keras.layers.Dense(10, activation='softmax')(x)
+
+    return tf.keras.Model(inputs, outputs)
 
 
 input_shape = (28, 28)
@@ -115,6 +118,7 @@ prediction = tf.keras.layers.Dense(1)(L1_distance)
 siamese_net = tf.keras.Model(inputs=[input_a, input_b], outputs=prediction)
 
 siamese_net.compile(loss='mse', optimizer='adam', metrics=['mae'])
+# model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 # 11. Entrenamiento
 siamese_net.fit(train_dataset, epochs=10, validation_data=test_dataset)

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import random
 
 # 1. Cargar modelo
-model = tf.keras.models.load_model("modelo_siamese_firmas")
+model = tf.keras.models.load_model("siamese_net_20.h5")
 
 # 2. Cargar dataset y normalizar
 def normalize_img(image, label):
