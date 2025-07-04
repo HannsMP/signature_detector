@@ -9,6 +9,7 @@ import tensorflow as tf
 import pickle
 # import keras
 from keras.saving import register_keras_serializable
+from predict import percentage_np
 
 # keras.config.enable_unsafe_deserialization()
 
@@ -20,6 +21,7 @@ MODEL_PATH = "../model/model_signature_free.keras"
 LABEL_PATH = "../model/label_signature.pkl"
 IMAGE_DATA_PATH = "../model/train_image_matrices_150_5.pkl"
 
+
 @register_keras_serializable()
 class L1Distance(tf.keras.layers.Layer):
     def __init__(self, **kwargs):
@@ -28,6 +30,7 @@ class L1Distance(tf.keras.layers.Layer):
     def call(self, inputs):
         x, y = inputs
         return tf.math.abs(x - y)
+
 
 # === Cargar modelo ===
 model = tf.keras.models.load_model(MODEL_PATH, custom_objects={"L1Distance": L1Distance})
@@ -79,10 +82,12 @@ def decode_image(img_b64):
     arr = np.array(img, dtype=np.float32) / 255.0
     return np.expand_dims(arr, axis=-1)  # (240, 320, 1)
 
+
 option = {
     "0": "Identica",
     "1": "Falcificacion"
 }
+
 
 @app.route("/api/predict", methods=["POST"])
 def predict():
@@ -100,11 +105,14 @@ def predict():
         prediction = model.predict([a_input, b_input], verbose=0)
         predicted_index = np.argmax(prediction)
         predicted_label = label_encoder.inverse_transform([predicted_index])[0]
+        percentage = float(percentage_np(prediction[0]))
 
         # Por defecto mostramos el porcentaje de clase 1 (diferencia)
-        print(f"Resultado predicción: {predicted_label}, {option[predicted_label]}")
+        print(
+            f"Resultado predicción: {prediction}\n    Index:{predicted_index}\n    Label: {predicted_label}\n    Option: {option[predicted_label]}\n    percentage: {percentage}")
 
-        return jsonify({"predict": option[predicted_label] })
+
+        return jsonify({"predict": option[predicted_label], "percentage": percentage})
 
     except Exception as e:
         print(e)

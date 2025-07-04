@@ -233,7 +233,7 @@
             if (data.error) {
                 percentageDisplay.textContent = "Error";
             } else {
-                percentageDisplay.textContent = data?.predict;
+                percentageDisplay.textContent = data?.percentage + " - " + data?.percentage.toFixed(2) + "%";
             }
         };
 
