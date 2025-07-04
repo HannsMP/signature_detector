@@ -52,13 +52,17 @@ def get_sample_image():
     tipo_idx = random.choice([0, 1])  # 0 = forge, 1 = genuine
     imagen = random.choice(muestra[tipo_idx])
 
+    # Asegurar forma (H, W)
+    if imagen.ndim == 3 and imagen.shape[-1] == 1:
+        imagen = imagen[:, :, 0]  # quitar dimensión de canal
+
     # Si es (240, 320) lo pasamos a RGB para mostrarlo en el navegador
     if len(imagen.shape) == 2:
         imagen_rgb = np.stack([imagen] * 3, axis=-1)
     else:
         imagen_rgb = imagen
 
-    img = Image.fromarray((imagen_rgb * 255).astype(np.uint8))
+    img = Image.fromarray(imagen_rgb.astype(np.uint8))
     buffered = BytesIO()
     img.save(buffered, format="PNG")
     img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
@@ -75,6 +79,10 @@ def decode_image(img_b64):
     arr = np.array(img, dtype=np.float32) / 255.0
     return np.expand_dims(arr, axis=-1)  # (240, 320, 1)
 
+option = {
+    "0": "Identica",
+    "1": "Falcificacion"
+}
 
 @app.route("/api/predict", methods=["POST"])
 def predict():
@@ -89,15 +97,17 @@ def predict():
         a_input = np.expand_dims(img1, axis=0)  # (1, 240, 320, 1)
         b_input = np.expand_dims(img2, axis=0)
 
-        pred = model.predict([a_input, b_input], verbose=0)
+        prediction = model.predict([a_input, b_input], verbose=0)
+        predicted_index = np.argmax(prediction)
+        predicted_label = label_encoder.inverse_transform([predicted_index])[0]
 
         # Por defecto mostramos el porcentaje de clase 1 (diferencia)
-        res = float(pred[0][1]) * 100
-        print(f"Resultado predicción: {res:.2f}%")
+        print(f"Resultado predicción: {predicted_label}, {option[predicted_label]}")
 
-        return jsonify({"percentage": res})
+        return jsonify({"predict": option[predicted_label] })
 
     except Exception as e:
+        print(e)
         return jsonify({"error": str(e)}), 400
 
 

@@ -102,7 +102,7 @@
             </div>
         </div>
         <div class="signature-percentage">
-            Porcentaje de similitud: <span id="signature-percentage">0.00</span> %
+            Porcentaje de similitud: <span id="signature-percentage">- - -</span>
         </div>
     </div>
 
@@ -220,6 +220,7 @@
 
             const img2 = canvasToDataURL(compareCanvas);
 
+            percentageDisplay.textContent = "- - -";
             const res = await fetch("/api/predict", {
                 method: "POST",
                 headers: {
@@ -232,7 +233,7 @@
             if (data.error) {
                 percentageDisplay.textContent = "Error";
             } else {
-                percentageDisplay.textContent = (data?.percentage || 0).toFixed(2);
+                percentageDisplay.textContent = data?.predict;
             }
         };
 
