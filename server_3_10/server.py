@@ -49,6 +49,45 @@ def index():
     return send_file("html/write.html")
 
 
+@app.route("/api/resize_image", methods=["POST"])
+def resize_image():
+    try:
+        data = request.json
+        img_b64 = data.get("image")
+
+        # Procesar imagen: decode a PIL
+        _, encoded = img_b64.split(",", 1)
+        img_bytes = base64.b64decode(encoded)
+        img = Image.open(BytesIO(img_bytes)).convert("L")
+        original_width, original_height = img.size
+        target_width, target_height = (320, 240)
+
+        # Escalado proporcional
+        ratio = min(target_width / original_width, target_height / original_height)
+        new_width = int(original_width * ratio)
+        new_height = int(original_height * ratio)
+
+        img_resized = img.resize((new_width, new_height), Image.LANCZOS)
+
+        # Canvas blanco
+        canvas = Image.new('L', (target_width, target_height), color=255)
+        offset_x = (target_width - new_width) // 2
+        offset_y = (target_height - new_height) // 2
+        canvas.paste(img_resized, (offset_x, offset_y))
+
+        # Convertir a RGB para navegador
+        canvas_rgb = Image.merge("RGB", (canvas, canvas, canvas))
+        buffered = BytesIO()
+        canvas_rgb.save(buffered, format="PNG")
+        resized_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+        return jsonify({"image": f"data:image/png;base64,{resized_b64}"})
+
+    except Exception as e:
+        print(f"Error resizing image: {e}")
+        return jsonify({"error": str(e)}), 400
+
+
 @app.route("/api/get_sample_image", methods=["GET"])
 def get_sample_image():
     muestra = random.choice(image_data)
@@ -105,14 +144,15 @@ def predict():
         prediction = model.predict([a_input, b_input], verbose=0)
         predicted_index = np.argmax(prediction)
         predicted_label = label_encoder.inverse_transform([predicted_index])[0]
-        percentage = float(percentage_np(prediction[0]))
+        genuine = float(prediction[0][0])
+        forge = float(prediction[0][1])
 
         # Por defecto mostramos el porcentaje de clase 1 (diferencia)
         print(
-            f"Resultado predicción: {prediction}\n    Index:{predicted_index}\n    Label: {predicted_label}\n    Option: {option[predicted_label]}\n    percentage: {percentage}")
+            f"Resultado predicción: {prediction}\n    Index:{predicted_index}\n    Label: {predicted_label}\n    Option: {option[predicted_label]}\n    genuine: {genuine}\n    forge: {forge}"
+        )
 
-
-        return jsonify({"predict": option[predicted_label], "percentage": percentage})
+        return jsonify({"predict": option[predicted_label], "genuine": genuine, "forge": forge})
 
     except Exception as e:
         print(e)
