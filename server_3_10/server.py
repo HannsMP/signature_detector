@@ -13,13 +13,17 @@ from predict import percentage_np
 
 # keras.config.enable_unsafe_deserialization()
 
+min_range = 180
+max_range = 255
+change_for = 255
+
 app = Flask(__name__)
 CORS(app)
 
 # === Rutas a tus recursos ===
-MODEL_PATH = "../model/model_signature_free.keras"
-LABEL_PATH = "../model/label_signature.pkl"
-IMAGE_DATA_PATH = "../model/train_image_matrices_150_5.pkl"
+LABEL_PATH = "../_model/label_signature.pkl"
+MODEL_PATH = "../_model/model_signature[240](210,2,6,240,320)[180,255,255]].keras"
+IMAGE_DATA_PATH = "../_model/train_image(210,2,2,240,320)[180,255,255].pkl"
 
 
 @register_keras_serializable()
@@ -75,10 +79,21 @@ def resize_image():
         offset_y = (target_height - new_height) // 2
         canvas.paste(img_resized, (offset_x, offset_y))
 
-        # Convertir a RGB para navegador
-        canvas_rgb = Image.merge("RGB", (canvas, canvas, canvas))
+        # Convertir a matriz numpy
+        matrix = np.array(canvas)
+
+        # Aplicar reemplazo si se indica
+        mask = (matrix >= min_range) & (matrix <= max_range)
+        matrix[mask] = change_for
+
+        # Convertir a RGB duplicando canales
+        matrix_rgb = np.stack([matrix] * 3, axis=-1)  # (H, W, 3)
+
+        # Convertir a imagen final
+        img_final = Image.fromarray(matrix_rgb.astype(np.uint8), mode="RGB")
+
         buffered = BytesIO()
-        canvas_rgb.save(buffered, format="PNG")
+        img_final.save(buffered, format="PNG")
         resized_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
         return jsonify({"image": f"data:image/png;base64,{resized_b64}"})

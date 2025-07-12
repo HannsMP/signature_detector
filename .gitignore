@@ -173,10 +173,6 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-model/*
-!model/model.rar
-signature_datasets/test
-signature_datasets/train
-signature_datasets/datasets.rar
-signature_datasets/signature_datasets.rar
-signature_datasets/*.pkl
+_preparation/test
+_preparation/train
+_preparation/*.pkl
